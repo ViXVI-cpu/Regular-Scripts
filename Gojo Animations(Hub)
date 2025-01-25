@@ -44,6 +44,6 @@ local MainSection = MainTab:CreateSection("Main")
 local Button = MainTab:CreateButton({
    Name = "Awakening",
    Callback = function()
-        A1R:Play
+        A1R:Play()
    end,
 })
