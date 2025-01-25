@@ -1,7 +1,9 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local A1 = Instance.new(”Animation”)
-A1.AnimationId = "
+local A1 = Instance.new("Animation")
+A1.AnimationId = "rbxassetid://74640654328218"
+
+local A1R = game.Players.LocalPlayer.Character:WaitForChild("Humanoid"):LoadAnimation(A1)
 
 local Window = Rayfield:CreateWindow({
    Name = "Deluxe Hub",
@@ -42,6 +44,6 @@ local MainSection = MainTab:CreateSection("Main")
 local Button = MainTab:CreateButton({
    Name = "Awakening",
    Callback = function()
-        
+        A1R:Play
    end,
 })
