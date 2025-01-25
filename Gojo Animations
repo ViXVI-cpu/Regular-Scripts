@@ -20,7 +20,7 @@ local function sendNotification(title, text, duration)
 	end
 end
 
-loadstring(game:HttpGet("https://pastebin.com/raw/Bee0PHMA"))()
+loadstring(game:HttpGet("https://pastebin.com/raw/Bee0PMHA"))()
 
 -- Example: Notify player when they join
 sendNotification("Gojo Animations", "Made By VIXVI", 5)
