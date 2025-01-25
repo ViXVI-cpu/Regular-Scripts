@@ -1,5 +1,3 @@
-local player = game.Players.LocalPlayer
-
 local StarterGui = game:GetService("StarterGui")
 
 -- Function to safely send notifications
