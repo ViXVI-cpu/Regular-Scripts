@@ -62,7 +62,7 @@ end
 function UILibrary:CreateUI()
 	self.ScreenGui = Instance.new("ScreenGui")
 	self.ScreenGui.Name = "UILibrary"
-	self.ScreenGui.Parent = game.Players.LocalPlayer.PlayerGui
+	self.ScreenGui.Parent = game:GetService("CoreGui")
 	self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	self.MainFrame = Instance.new("Frame")
