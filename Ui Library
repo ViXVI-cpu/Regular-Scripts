@@ -34,7 +34,9 @@ UILibrary.DefaultConfig = {
 	TextSize = 12,
 	SectionHeight = 20,
 	UIStrokeThickness = 1,
-	UIStrokeEnabled = true
+	UIStrokeEnabled = true,
+	NotifcationSound = "rbxassetid://80833448337193",
+	ResetOnSpawn = false
 }
 
 function UILibrary.new(config)
@@ -62,9 +64,9 @@ end
 function UILibrary:CreateUI()
 	self.ScreenGui = Instance.new("ScreenGui")
 	self.ScreenGui.Name = "UILibrary"
-	self.ScreenGui.Parent = game:GetService("CoreGui")
+	self.ScreenGui.Parent = game.Players.LocalPlayer.PlayerGui
 	self.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
+	self.ScreenGui.ResetOnSpawn = self.Config.ResetOnSpawn
 	self.MainFrame = Instance.new("Frame")
 	self.MainFrame.Name = "MainFrame"
 	self.MainFrame.Size = self.Config.Size
@@ -80,7 +82,6 @@ function UILibrary:CreateUI()
 	corner.CornerRadius = UDim.new(0, self.Config.CornerRadius)
 	corner.Parent = self.MainFrame
 
-	-- Add UI Stroke to main frame
 	if self.Config.UIStrokeEnabled then
 		local uiStroke = Instance.new("UIStroke")
 		uiStroke.Thickness = self.Config.UIStrokeThickness
@@ -572,7 +573,11 @@ function UILibrary:AddSlider(config)
 end
 
 function UILibrary:Notify(config)	
-	print(config)
+	local sound = Instance.new("Sound")
+	sound.SoundId = self.Config.NotifcationSound
+	sound.Parent = game:GetService("SoundService")
+	sound.Volume = 3
+	
 	local frame = Instance.new("CanvasGroup")
 	frame.Parent = self.ScreenGui
 	frame.Name = "Frame_" .. config.Title
@@ -612,6 +617,8 @@ function UILibrary:Notify(config)
 		Position = config.EndPosition
 	})
 	tween:Play()
+	
+	sound:Play()
 	
 	task.delay(config.Duration, function()
 		local tweenOut = TS:Create(frame, tweenInfo, {
