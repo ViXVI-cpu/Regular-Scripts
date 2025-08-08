@@ -1,0 +1,419 @@
+local players = game:GetService("Players")
+local plr = players.LocalPlayer
+local character = plr.Character or plr.CharacterAdded:Wait()
+character.Archivable = true
+local RunService = game:GetService("RunService")
+
+local espEnabled = false
+local espObjects = {}
+
+local ghost
+local controlConn
+local storedPos
+
+local camera = workspace.CurrentCamera
+
+local noclip = false
+
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/ViXVI-cpu/Regular-Scripts/refs/heads/main/Ui%20Library"))()
+
+local Http = game:GetService("HttpService")
+local TPS = game:GetService("TeleportService")
+local Api = "https://games.roblox.com/v1/games/"
+
+local _place = game.PlaceId
+local _servers = Api.._place.."/servers/Public?sortOrder=Asc&limit=100"
+
+local function ListServers(cursor)
+	local Raw = game:HttpGet(_servers .. ((cursor and "&cursor="..cursor) or ""))
+	return Http:JSONDecode(Raw)
+end
+
+local function createESPGui(targetPlayer)
+	if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("Head") then return end
+
+	local head = targetPlayer.Character.Head
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "PlayerESP"
+	billboard.Size = UDim2.new(0, 200, 0, 50)
+	billboard.StudsOffset = Vector3.new(0, 2, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Adornee = head
+	billboard.Parent = head
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, 0, 1, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.TextColor3 = Color3.new(1, 1, 1)
+	textLabel.TextStrokeTransparency = 0.5
+	textLabel.TextScaled = true
+	textLabel.Font = Enum.Font.SourceSansBold
+	textLabel.Name = "ESPText"
+	textLabel.Parent = billboard
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "PlayerESPHighlight"
+	highlight.Adornee = targetPlayer.Character
+	highlight.FillTransparency = 1
+	highlight.OutlineColor = Color3.new(1, 1, 1)
+	highlight.OutlineTransparency = 0
+	highlight.Parent = targetPlayer.Character
+
+	espObjects[targetPlayer] = {
+		gui = billboard,
+		label = textLabel,
+		highlight = highlight
+	}
+end
+
+local function removeESP(player)
+	local esp = espObjects[player]
+	if esp then
+		if esp.gui then esp.gui:Destroy() end
+		if esp.highlight then esp.highlight:Destroy() end
+		espObjects[player] = nil
+	end
+end
+
+local function toggleESP(state)
+	espEnabled = state
+
+	if espEnabled then
+		for _, player in ipairs(players:GetPlayers()) do
+			if player ~= plr then
+				createESPGui(player)
+			end
+		end
+	else
+		for _, player in ipairs(players:GetPlayers()) do
+			removeESP(player)
+		end
+	end
+end
+
+function init()
+	local ui = UILibrary.new({
+		TitleText = "Universal Hub", -- change title text
+		Size = UDim2.new(0, 175, 0, 225), -- change Size
+		Position = UDim2.new(0.5, -140, 0.5, -190), -- change position when UI starts
+		TitleHeight = 30,
+		CornerRadius = 6,
+		ElementPadding = 6,
+		Font = Enum.Font.GothamSemibold,
+		TextSize = 12,
+		SectionHeight = 20,
+		UIStrokeThickness = 1,
+		SliderColor = Color3.fromRGB(54, 54, 54),
+		NotifcationSound = "rbxassetid://80833448337193",
+		ResetOnSpawn = false
+	})
+	
+	ui:AddSection("Main")
+	
+	ui:AddButton({
+		Text = "Fly",
+		
+		Callback = function()
+			loadstring(game:HttpGet('https://pastebin.com/raw/YSL3xKYU'))()
+		end,
+	})
+	
+	ui:AddToggle({
+		Text = "ESP",
+		Default = false,
+		Callback = function(state)
+			toggleESP(state)
+		end
+	})
+
+	ui:AddToggle({
+		Text = "Noclip",
+		Default = false,
+		Callback = function(state)
+			noclip = state
+		end
+	})
+
+	ui:AddTextBox({
+		Text = "Go to:",
+		Default = "nil",
+		Placeholder = "Go to:",
+		
+		Callback = function(text)
+			local target = players:FindFirstChild(text)
+
+			if target then
+				character:PivotTo(target.Character.HumanoidRootPart.CFrame)
+			else
+				ui:Notify({
+					Title = "Error",
+					Text = "Player not found",
+					Duration = 3,
+					StartPosition = UDim2.new(1, 0, 0.776, 0),
+					EndPosition = UDim2.new(0.724, 0, 0.776, 0),
+					TweenTime = 0.5
+				})
+			end
+		end
+	})
+
+	ui:AddToggle({
+		Text = "Xray",
+		Default = false,
+		Callback = function(state)
+			for _, obj in pairs(workspace:GetDescendants()) do
+				if obj:IsA("BasePart") then
+					local char = obj:FindFirstAncestorOfClass("Model")
+					local isCharacter = char and char:FindFirstChildOfClass("Humanoid")
+
+					if isCharacter then
+						obj.Transparency = 0
+					else
+						obj.Transparency = state and 0.8 or 0
+					end
+				end
+			end
+		end
+	})
+	
+	ui:AddToggle({
+		Text = "Invisibility",
+		Default = false,
+		
+		Callback = function(state)
+			if state then
+				ghost = character:Clone()
+				ghost.Name = character.Name.."_Clone"
+				ghost.Parent = workspace
+
+				for _, part in ipairs(ghost:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.Anchored = false
+						part.CanCollide = true
+						part.Transparency = 0.8
+					end
+				end
+
+				local hrp = ghost:WaitForChild("HumanoidRootPart")
+				hrp.CFrame = character:WaitForChild("HumanoidRootPart").CFrame	
+
+				storedPos = character.HumanoidRootPart.CFrame
+				character.HumanoidRootPart.CFrame = storedPos * CFrame.new(0, 0, 100)
+
+				camera.CameraSubject = ghost:WaitForChild("Humanoid")
+				plr.Character = ghost
+				
+				character.HumanoidRootPart.Anchored = true
+			else
+				if ghost and ghost.Parent then
+					character.HumanoidRootPart.CFrame = ghost:WaitForChild("HumanoidRootPart").CFrame
+					
+					ghost:Destroy()
+					ghost = nil
+				end
+				
+				character.HumanoidRootPart.Anchored = false
+
+				plr.Character = character
+				camera.CameraSubject = character:WaitForChild("Humanoid")
+			end
+		end
+	})
+
+	ui:AddSeparator()
+	ui:AddSection("Troll")
+
+	ui:AddToggle({
+		Text = "Fling Spin BEta",
+		
+		Default = false,
+		
+		Callback = function(state)
+			task.spawn(function()
+				local hrp = character:FindFirstChild("HumanoidRootPart")
+				if hrp then
+					while state do
+						hrp.RotVelocity = Vector3.new(0, 999, 0)
+						task.wait()
+					end
+				else
+					ui:Notify({
+						Title = "Error",
+						Text = "HumanoidRootPart not found!",
+						Duration = 3,
+						StartPosition = UDim2.new(1, 0, 0.776, 0),
+						EndPosition = UDim2.new(0.724, 0, 0.776, 0),
+						TweenTime = 0.5
+					})
+				end
+			end)
+		end,
+	})
+
+	ui:AddSeparator()
+
+	ui:AddSection("Admin")
+	
+	ui:AddButton({
+		Text = "Infinite Yield",
+		
+		Callback = function()
+			loadstring(game:HttpGet(('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'),true))()
+		end,
+	})
+	
+	ui:AddButton({
+		Text = "Nameless Admin",
+		
+		Callback = function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/FilteringEnabled/NamelessAdmin/main/Source"))()
+		end,
+	})
+	
+	ui:AddButton({
+		Text = "Fedora Admin",
+		
+		Callback = function()
+			loadstring(game:HttpGet('https://raw.githubusercontent.com/alexx1212/fedoratoomutch/main/toomucth'))()
+		end,
+	})
+	
+	ui:AddButton({
+		Text = "Cmd X",
+		
+		Callback = function()
+			loadstring(game:HttpGet("https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source", true))()
+		end,
+	})
+	
+	ui:AddButton({
+		Text = "Proton Admin",
+		
+		Callback = function()
+			loadstring(game:HttpGet("https://api.luarmor.net/files/v3/loaders/5e6e6cc1bb32fd926764d064e2c60a3b.lua"))()
+		end,
+	})
+	
+	ui:AddSeparator()
+	
+	ui:AddSection("Server")
+	
+	ui:AddButton({
+		Text = "Join Smallest Server",
+		
+		Callback = function()
+			local Server, Next; repeat
+				local Servers = ListServers(Next)
+				Server = Servers.data[1]
+				Next = Servers.nextPageCursor
+			until Server
+
+			TPS:TeleportToPlaceInstance(_place,Server.id, plr)
+		end,
+	})
+	
+	ui:AddSeparator()
+
+	ui:AddSection("Player")
+
+	ui:AddSlider({
+		Text = "Walkspeed",
+		Default = 16,
+		Min = 0,
+		Max = 200,
+
+		Callback = function(num)
+			character.Humanoid.WalkSpeed = num
+		end,
+	})
+
+	ui:AddSlider({
+		Text = "JumpPower",
+		Default = 50,
+		Min = 0,
+		Max = 200,
+
+		Callback = function(num)
+			character.Humanoid.JumpPower = num
+		end,
+	})
+
+	ui:AddSeparator()
+
+	ui:AddSection("Ui Controls")
+
+	ui:AddButton({
+		Text = "Destroy Ui",
+		Callback = function()
+			ui:Destroy()
+		end
+	})
+	
+	ui:AddButton({
+		Text = "Restart Ui",
+		Callback = function()
+			ui:Destroy()
+			task.wait(.5)
+			init()
+		end
+	})
+
+	ui:AddSeparator()
+
+	ui:AddSection("Credits")
+
+	ui:AddLabel("Made By SugaBlaz")
+	ui:AddLabel("Thanks to: Hmmm5650 for this cool ui library!")
+
+	ui:AddSeparator()
+
+	ui:Notify({
+		Title = "Loaded",
+		Text = "Thanks for using this",
+		Duration = 3,
+		StartPosition = UDim2.new(1, 0, 0.776, 0),
+		EndPosition = UDim2.new(0.724, 0, 0.776, 0),
+		TweenTime = 0.5
+	})
+end
+
+init()
+
+players.PlayerAdded:Connect(function(player)
+	if espEnabled and player ~= plr then
+		player.CharacterAdded:Connect(function()
+			wait(1)
+			createESPGui(player)
+		end)
+	end
+end)
+
+RunService.Stepped:Connect(function()
+	if noclip and character then
+		local hrpY = character:WaitForChild("HumanoidRootPart").Position.Y
+
+		for _, v in pairs(workspace:GetDescendants()) do
+			if v:IsA("BasePart") then
+				if v.Position.Y < hrpY - 3 then
+					v.CanCollide = true
+				else
+					v.CanCollide = false
+				end
+			end
+		end
+	end
+end)
+
+
+RunService.RenderStepped:Connect(function()
+	if not espEnabled then return end
+
+	for player, esp in pairs(espObjects) do
+		if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local distance = math.floor((player.Character.HumanoidRootPart.Position - character.HumanoidRootPart.Position).Magnitude)
+			local displayName = player.DisplayName
+			esp.label.Text = displayName .. " [" .. distance .. " studs]"
+		end
+	end
+end)
