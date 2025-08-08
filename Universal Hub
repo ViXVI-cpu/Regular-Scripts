@@ -23,7 +23,7 @@ local camera = workspace.CurrentCamera
 
 local noclip = false
 
-local UILibrary = require(script.Parent.UI)
+local UILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/ViXVI-cpu/Regular-Scripts/refs/heads/main/Ui%20Library"))()
 
 local TPS = game:GetService("TeleportService")
 local Api = "https://games.roblox.com/v1/games/"
